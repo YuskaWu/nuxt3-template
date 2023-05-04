@@ -1,5 +1,5 @@
-import { useFetch } from '#imports';
+import { useFetch } from '#imports'
 
 export function useApi() {
-  return useFetch('/test');
+  return useFetch('/test')
 }

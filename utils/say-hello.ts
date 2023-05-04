@@ -1,3 +1,3 @@
-export default function (hello: string) {
-  return 'hello';
+export default function () {
+  return 'hello'
 }
