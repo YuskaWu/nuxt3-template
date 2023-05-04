@@ -17,7 +17,7 @@ module.exports = {
   ignorePatterns: ['**/*.md', '**/*.json'],
   overrides: [
     {
-      files: ['**/*.{js,ts,vue}'],
+      files: ['**/*.{js,ts,vue,css,scss,html}'],
       rules: {
         'vue/no-multiple-template-root': 'off',
         'vue/multi-word-component-names': 'off',
