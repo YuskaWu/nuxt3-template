@@ -9,13 +9,13 @@ export default defineNuxtConfig({
   modules: ['nuxt-typed-router'],
   hooks: {
     'pages:extend'(pages) {
-      function removePagesMatching(pattern: RegExp, pages: NuxtPage[] = []) {
+      function removePages(pattern: RegExp, pages: NuxtPage[] = []) {
         const pagesToRemove = []
         for (const page of pages) {
           if (page.file && pattern.test(page.file)) {
             pagesToRemove.push(page)
           } else {
-            removePagesMatching(pattern, page.children)
+            removePages(pattern, page.children)
           }
         }
         for (const page of pagesToRemove) {
@@ -23,8 +23,8 @@ export default defineNuxtConfig({
         }
       }
 
-      // Remove all pages whose filename does not end with "index.vue"
-      removePagesMatching(/.*(?<!index\.vue)$/, pages)
+      // Remove all pages whose filename does not end with "/index.vue"
+      removePages(/.*(?<!\/index\.vue)$/, pages)
     }
   }
 })
