@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   imports: {
     autoImport: false
   },
+  modules: ['nuxt-typed-router'],
   hooks: {
     'pages:extend'(pages) {
       function removePagesMatching(pattern: RegExp, pages: NuxtPage[] = []) {
