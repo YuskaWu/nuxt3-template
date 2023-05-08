@@ -4,6 +4,7 @@
     "esbenp.prettier-vscode",
     "vue.vscode-typescript-vue-plugin",
     "vue.volar",
-    "yoavbls.pretty-ts-errors"
+    "yoavbls.pretty-ts-errors",
+    "stylelint.vscode-stylelint"
   ]
 }

@@ -13,18 +13,12 @@ module.exports = {
     sourceType: 'module'
   },
   plugins: [],
-  rules: {},
-  ignorePatterns: ['**/*.md', '**/*.json'],
-  overrides: [
-    {
-      files: ['**/*.{js,ts,vue,css,scss,html}'],
-      rules: {
-        'vue/no-multiple-template-root': 'off',
-        'vue/multi-word-component-names': 'off',
-        // personally don't like the order of eslint sorting, and also it conflicts
-        // with the buin-in "source.organizeImports" setting, so turn it off
-        'import/order': 'off'
-      }
-    }
-  ]
+  ignorePatterns: [],
+  rules: {
+    'vue/no-multiple-template-root': 'off',
+    'vue/multi-word-component-names': 'off',
+    // personally don't like the order of eslint sorting, and also it conflicts
+    // with the buin-in "source.organizeImports" setting, so turn it off
+    'import/order': 'off'
+  }
 }

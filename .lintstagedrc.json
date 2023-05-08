@@ -2,7 +2,6 @@
   "*.js": "eslint",
   "*.ts": "eslint",
   "*.vue": "eslint",
-  "*.css": "eslint",
-  "*.scss": "eslint",
-  "*.html": "eslint"
+  "*.css": "stylelint",
+  "*.scss": "stylelint"
 }
