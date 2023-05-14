@@ -26,5 +26,12 @@ export default defineNuxtConfig({
       // Remove all pages whose filename does not end with "/index.vue"
       removePages(/.*(?<!\/index\.vue)$/, pages)
     }
+  },
+  postcss: {
+    plugins: {
+      'postcss-preset-env': {
+        browsers: '> 0.5%, last 2 versions, safari > 12, not dead'
+      }
+    }
   }
 })

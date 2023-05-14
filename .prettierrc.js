@@ -5,5 +5,6 @@ module.exports = {
   // No trailing commas wherever possible
   trailingComma: 'none',
   // Maintain existing line ending
-  endOfLine: 'auto'
+  endOfLine: 'auto',
+  plugins: ['prettier-plugin-css-order']
 }

@@ -8,5 +8,8 @@
     "source.organizeImports": true
   },
   "stylelint.validate": ["css", "scss"],
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
