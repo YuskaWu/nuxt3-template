@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   imports: {
     autoImport: false
   },
-  modules: ['nuxt-typed-router'],
+  modules: ['@pinia/nuxt', 'nuxt-typed-router'],
   hooks: {
     'pages:extend'(pages) {
       function removePages(pattern: RegExp, pages: NuxtPage[] = []) {
