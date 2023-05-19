@@ -33,5 +33,10 @@ export default defineNuxtConfig({
         browsers: '> 0.5%, last 2 versions, safari > 12, not dead'
       }
     }
+  },
+  runtimeConfig: {
+    public: {
+      baseUrl: process.env.BASE_URL
+    }
   }
 })

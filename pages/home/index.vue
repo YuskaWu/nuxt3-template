@@ -1,24 +1,18 @@
 <template>
   <HelloWorld />
   <h1 :class="$style.home_header">hello~</h1>
+  <NuxtLink to="/profile">go to profile page</NuxtLink>
 </template>
 
 <script setup lang="ts">
-import { ref } from '#imports'
+import { NuxtLink } from '#components'
 import HelloWorld from '@/components/HelloWorld.vue'
-import { useApi } from '@/composables/useApi'
-import sayHello from '@/utils/say-hello'
-
-const names = [1, 2]
-const count = ref(1)
-const test = useApi()
-const test2 = sayHello()
 </script>
 
 <style module>
 .home_header {
-  border: 1px solid red;
   animation: rainbow 40s linear infinite;
+  border: 1px solid red;
 }
 
 @keyframes rainbow {
