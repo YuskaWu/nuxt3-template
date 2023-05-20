@@ -1,14 +1,5 @@
 /* eslint-disable  no-use-before-define */
 import type { UseFetchOptions } from 'nuxt/app'
-import type { Ref, UnwrapNestedRefs } from 'vue'
-
-type Params<T> =
-  | Ref<T>
-  | T
-  | UnwrapNestedRefs<T>
-  | {
-      [key in keyof T]: Params<T[key]>
-    }
 
 // Define common response type of API.
 
@@ -19,7 +10,7 @@ type Params<T> =
 //   message: string[]
 // }
 
-type ResponseJson<T> = T
+export type ResponseJson<T> = T
 
 type ApiInfo = {
   url: string
@@ -27,16 +18,6 @@ type ApiInfo = {
 }
 
 export type ApiNames = keyof ApiTypeMap
-export type CustomUseFetchOptions<T extends ApiNames> = UseFetchOptions<
-  ResponseJson<ApiTypeMap[T]['data']>
->
-
-export type UseApiArguments<
-  T extends ApiNames,
-  K extends Omit<ApiTypeMap[T], 'data'>
-> = {} extends K
-  ? [apiName: T, fetchOption?: CustomUseFetchOptions<T>]
-  : [apiName: T, fetchOption: CustomUseFetchOptions<T> & K]
 
 // --------------------------------------------------------------------------
 
@@ -45,7 +26,7 @@ export type UseApiArguments<
 // 1. Must define "data" type which is the data we want from response json.
 // 2. Must define "pathParams" type if the API url is dynamic.
 // 3. Define "query" type if the API support query string.
-// 4. Using Params<T> to define "pathParams" & "query" type so that you can use "ref<T>" or "reactive<T>"
+// 4. Define "payload" type if the method is POST, PUT or PATCH
 
 // Example:
 // export type ApiTypeMap = {
@@ -59,6 +40,7 @@ export type UseApiArguments<
 //   }
 //   updateProfile: {
 //     payload: {name: string, age: number }
+//     data: {}
 //   }
 // }
 
@@ -73,7 +55,7 @@ export type UseApiArguments<
 
 export type ApiTypeMap = {
   getExampleProfile: {
-    pathParams: Params<{ id: string | number }>
+    pathParams: { id: string | number }
     data: {}
   }
   getFakeUserProfile: {
@@ -87,11 +69,16 @@ export type ApiTypeMap = {
       }
     }
   }
+  updateProfile: {
+    payload: { name: string; age: number }
+    data: never
+  }
 }
 
 export const API_LIST = {
   getExampleProfile: { url: 'user/:id/profile', method: 'get' },
-  getFakeUserProfile: { url: '', method: 'get' }
+  getFakeUserProfile: { url: '', method: 'get' },
+  updateProfile: { url: 'user/:id/profile', method: 'post' }
 } satisfies { [key in ApiNames]: ApiInfo }
 
 type FakeProfile = {

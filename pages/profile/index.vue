@@ -19,4 +19,6 @@ const { data } = await useApi('getFakeUserProfile', {
   lazy: true,
   pathParams: { id }
 })
+
+await useApi('updateProfile', { payload: { name: '', age: 1 } })
 </script>

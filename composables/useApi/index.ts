@@ -1,13 +1,28 @@
 import { computed, useFetch, useRuntimeConfig } from '#imports'
 import type { UseFetchOptions } from 'nuxt/app'
 import { compile } from 'path-to-regexp'
-import type {
-  ApiNames,
-  ApiTypeMap,
-  CustomUseFetchOptions,
-  UseApiArguments
-} from './types'
+import type { Ref, UnwrapNestedRefs } from 'vue'
+import type { ApiNames, ApiTypeMap, ResponseJson } from './types'
 import { API_LIST } from './types'
+
+type Params<T> =
+  | Ref<T>
+  | T
+  | UnwrapNestedRefs<T>
+  | {
+      [key in keyof T]: Params<T[key]>
+    }
+
+export type CustomUseFetchOptions<T extends ApiNames> = UseFetchOptions<
+  ResponseJson<ApiTypeMap[T]['data']>
+>
+
+export type UseApiArguments<
+  T extends ApiNames,
+  K extends Omit<ApiTypeMap[T], 'data'>
+> = {} extends K
+  ? [apiName: T, fetchOption?: CustomUseFetchOptions<T>]
+  : [apiName: T, fetchOption: CustomUseFetchOptions<T> & Params<K>]
 
 let id = 1
 
@@ -40,6 +55,11 @@ function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
     return apiUrl
   })
 
+  const payload =
+    fetchOption && 'payload' in fetchOption
+      ? (fetchOption.payload as Record<string, any>)
+      : undefined
+
   const options: CustomUseFetchOptions<T> = {
     key: (id++).toString(),
     baseURL: config.public.baseUrl,
@@ -50,6 +70,7 @@ function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
       Accept: 'application/json'
       // Authorization: authHeader
     },
+    body: payload,
     onRequestError: defaultErrorHandler,
     ...fetchOption
   }
