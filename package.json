@@ -31,5 +31,8 @@
     "stylelint": "^15.6.1",
     "stylelint-config-standard-scss": "^9.0.0",
     "stylelint-prettier": "^3.0.0"
+  },
+  "dependencies": {
+    "ohash": "^1.1.2"
   }
 }

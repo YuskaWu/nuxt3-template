@@ -1,5 +1,6 @@
 import { computed, useFetch, useRuntimeConfig } from '#imports'
 import type { UseFetchOptions } from 'nuxt/app'
+import { hash } from 'ohash'
 import { compile } from 'path-to-regexp'
 import type { Ref, UnwrapNestedRefs } from 'vue'
 import type { ApiNames, ApiTypeMap, ResponseJson } from './types'
@@ -13,18 +14,16 @@ type Params<T> =
       [key in keyof T]: Params<T[key]>
     }
 
-export type CustomUseFetchOptions<T extends ApiNames> = UseFetchOptions<
+type CustomUseFetchOptions<T extends ApiNames> = UseFetchOptions<
   ResponseJson<ApiTypeMap[T]['data']>
 >
 
-export type UseApiArguments<
+type UseApiArguments<
   T extends ApiNames,
   K extends Omit<ApiTypeMap[T], 'data'>
 > = {} extends K
   ? [apiName: T, fetchOption?: CustomUseFetchOptions<T>]
   : [apiName: T, fetchOption: CustomUseFetchOptions<T> & Params<K>]
-
-let id = 1
 
 const defaultErrorHandler: UseFetchOptions<unknown>['onRequestError'] = () => {
   // This will only trigger on server side.
@@ -60,8 +59,10 @@ function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
       ? (fetchOption.payload as Record<string, any>)
       : undefined
 
+  const key = hash([fetchOption, config.public.baseUrl, url.value])
+
   const options: CustomUseFetchOptions<T> = {
-    key: (id++).toString(),
+    key,
     baseURL: config.public.baseUrl,
     method: API_LIST[apiName].method,
     responseType: 'json',
