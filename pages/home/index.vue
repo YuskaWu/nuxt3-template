@@ -1,7 +1,9 @@
 <template>
-  <HelloWorld />
-  <h1 :class="$style.home_header">hello~</h1>
-  <NuxtLink to="/profile">go to profile page</NuxtLink>
+  <div>
+    <HelloWorld />
+    <h1 :class="$style.home_header">hello~</h1>
+    <NuxtLink to="/profile">go to profile page</NuxtLink>
+  </div>
 </template>
 
 <script setup lang="ts">
