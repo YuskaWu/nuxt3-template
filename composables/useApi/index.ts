@@ -1,4 +1,4 @@
-import { computed, useFetch, useRuntimeConfig } from '#imports'
+import { computed, toValue, useFetch, useRuntimeConfig } from '#imports'
 import type { UseFetchOptions } from 'nuxt/app'
 import { hash } from 'ohash'
 import { compile } from 'path-to-regexp'
@@ -39,7 +39,9 @@ function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
   const url = computed(() => {
     const apiUrl = API_LIST[apiName].url
     const pathParams =
-      fetchOption && 'pathParams' in fetchOption ? fetchOption.pathParams : null
+      fetchOption && 'pathParams' in fetchOption
+        ? toValue(fetchOption.pathParams)
+        : null
 
     if (!pathParams) {
       return apiUrl
