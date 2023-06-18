@@ -1,4 +1,5 @@
 import { computed, toValue, useFetch, useRuntimeConfig } from '#imports'
+import useToken from '@/composables/useToken'
 import type { UseFetchOptions } from 'nuxt/app'
 import { hash } from 'ohash'
 import { compile } from 'path-to-regexp'
@@ -56,6 +57,8 @@ function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
     return apiUrl
   })
 
+  const token = useToken()
+
   const payload =
     fetchOption && 'payload' in fetchOption
       ? (fetchOption.payload as Record<string, any>)
@@ -70,8 +73,8 @@ function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
     responseType: 'json',
     headers: {
       'Content-Type': 'application/json',
-      Accept: 'application/json'
-      // Authorization: authHeader
+      Accept: 'application/json',
+      Authorization: token.value ? '' : `Bearer ${token.value}`
     },
     body: payload,
     onRequestError: defaultErrorHandler,
