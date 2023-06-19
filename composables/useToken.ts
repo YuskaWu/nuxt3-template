@@ -6,7 +6,7 @@ import { computed, useCookie, useState } from '#imports'
 // and it is reactive in both server and client side.
 export default function useToken() {
   const tokenCookie = useCookie('token')
-  const tokenState = useState('token', () => tokenCookie)
+  const tokenState = useState('token', () => tokenCookie.value)
 
   const token = computed({
     get() {
