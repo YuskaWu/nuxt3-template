@@ -72,7 +72,6 @@ function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
     method: API_LIST[apiName].method,
     responseType: 'json',
     headers: {
-      'Content-Type': 'application/json',
       Accept: 'application/json',
       Authorization: token.value ? '' : `Bearer ${token.value}`
     },
