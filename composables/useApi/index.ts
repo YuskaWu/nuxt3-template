@@ -7,12 +7,12 @@ import type { Ref, UnwrapNestedRefs } from 'vue'
 import type { ApiNames, ApiTypeMap, ResponseJson } from './types'
 import { API_LIST } from './types'
 
-type Params<T> =
+type ApiOptions<T> =
   | Ref<T>
   | T
   | UnwrapNestedRefs<T>
   | {
-      [key in keyof T]: Params<T[key]>
+      [key in keyof T]: ApiOptions<T[key]>
     }
 
 type CustomUseFetchOptions<T extends ApiNames> = UseFetchOptions<
@@ -21,19 +21,17 @@ type CustomUseFetchOptions<T extends ApiNames> = UseFetchOptions<
 
 type UseApiArguments<
   T extends ApiNames,
-  K extends Omit<ApiTypeMap[T], 'data'>
+  K = Omit<ApiTypeMap[T], 'data'>
 > = {} extends K
   ? [apiName: T, fetchOption?: CustomUseFetchOptions<T>]
-  : [apiName: T, fetchOption: CustomUseFetchOptions<T> & Params<K>]
+  : [apiName: T, fetchOption: CustomUseFetchOptions<T> & ApiOptions<K>]
 
 const defaultErrorHandler: UseFetchOptions<unknown>['onRequestError'] = () => {
   // This will only trigger on server side.
   // TODO: Try @nuxt/kit to log on server side.
 }
 
-function useApi<T extends ApiNames, K extends Omit<ApiTypeMap[T], 'data'>>(
-  ...args: UseApiArguments<T, K>
-) {
+function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
   const [apiName, fetchOption] = args
   const config = useRuntimeConfig()
 
