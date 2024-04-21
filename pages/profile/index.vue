@@ -12,10 +12,13 @@
 <script lang="ts" setup>
 import { definePageMeta, ref } from '#imports'
 import useApi from '@/composables/useApi'
+// import { navigateTo } from '@typed-router'
 
 definePageMeta({
   layout: 'orange'
 })
+
+// navigateTo('/home')
 
 const id = ref(1)
 // Since we already define API type in "composables/useApi/types.ts", TypeScript now will
