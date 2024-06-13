@@ -1,24 +1,28 @@
 import type { NuxtPage } from '@nuxt/schema'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
-
 export default defineNuxtConfig({
-  app: {
-    pageTransition: { name: 'page', mode: 'out-in' },
-    layoutTransition: { name: 'layout', mode: 'out-in' }
-  },
+  devtools: { enabled: true },
+  modules: ['@nuxt/eslint', '@nuxtjs/tailwindcss'],
+
   components: false,
   imports: {
     autoImport: false
   },
-  modules: ['@pinia/nuxt', 'nuxt-typed-router'],
+  experimental: {
+    typedPages: true
+  },
+
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' }
+  },
+
   hooks: {
     'pages:extend'(pages) {
       const indexPageRegExp = /.*\/index\.vue$/
 
-      // Remove all pages except the following:
-      // 1. File name end with "/index.vue"
-      // 2. Is nested route. (has children)
+      // Recursively delete page routes whose file name is not "index.vue" unless it has children(nested route),
+      // so that we can put page-scoped components inside it's own directory.
       function removePages(pages: NuxtPage[] = []) {
         const pagesToRemove = []
 
@@ -28,13 +32,14 @@ export default defineNuxtConfig({
             continue
           }
 
-          // preserve page which is nested route
+          // Preserve pages with nested routes
+          // see https://nuxt.com/docs/guide/directory-structure/pages#nested-routes
           if (page.children?.length) {
             removePages(page.children)
             continue
           }
 
-          // preserve page whose filename ends with '/index.vue'
+          // preserve pages whose filename ends with '/index.vue'
           if (indexPageRegExp.test(page.file)) {
             removePages(page.children)
             continue
@@ -51,16 +56,22 @@ export default defineNuxtConfig({
       removePages(pages)
     }
   },
-  postcss: {
-    plugins: {
-      'postcss-preset-env': {
-        browsers: '> 0.5%, last 2 versions, safari > 12, not dead'
-      }
-    }
-  },
+
   runtimeConfig: {
     public: {
-      baseUrl: process.env.BASE_URL
+      apiBaseUrl: 'https://api.spoonacular.com',
+      apiKey: ''
+    }
+  },
+
+  eslint: {
+    config: {
+      stylistic: {
+        indent: 2,
+        semi: false,
+        quotes: 'single',
+        commaDangle: 'never'
+      }
     }
   }
 })

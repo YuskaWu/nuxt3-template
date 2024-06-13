@@ -1,5 +1,4 @@
-import type { UseFetchOptions } from 'nuxt/app'
-import { hash } from 'ohash'
+import type { FetchError } from 'ofetch'
 import { compile } from 'path-to-regexp'
 import type { Ref, UnwrapNestedRefs } from 'vue'
 import type { ApiNames, ApiParams, ApiResponse } from './schema'
@@ -10,15 +9,17 @@ import {
   computed,
   createError,
   navigateTo,
-  onUnmounted,
-  useFetch,
   useNuxtApp,
-  useRuntimeConfig,
-  watch
+  useRuntimeConfig
 } from '#imports'
 
 import { callWithNuxt, useRoute } from '#app'
 import deepToValue from '@/utils/deepToValue'
+
+type FetchOption = Parameters<typeof $fetch>[1]
+
+// TODO: define response json type for failed request
+type ErrorData = { code: number, message: string, status: string }
 
 // Let T also can be an object wrapped by Ref since useFetch can accept Ref variable as the part of useFetch option
 type ParamOption<T> =
@@ -30,7 +31,7 @@ type ParamOption<T> =
   }
 
 // The generic type of UseFetchOptions is the response json of API, and it depends on ApiName.
-type UseApiOption<ApiName extends ApiNames> = UseFetchOptions<ApiResponse[ApiName]> & {
+type UseApiOption<Error> = FetchOption & {
   errorHandler?: (error: {
     error?: Error
     status?: number
@@ -45,8 +46,8 @@ type UseApiArguments<ApiName extends ApiNames, Params = ApiParams<ApiName>> =
 //
 // Record<string, never> means empty.
 Record<string, never> extends Params
-  ? [apiName: ApiName, options?: UseApiOption<ApiName>]
-  : [apiName: ApiName, options: ParamOption<Params> & UseApiOption<ApiName>]
+  ? [apiName: ApiName, options?: UseApiOption<FetchError<ErrorData>>]
+  : [apiName: ApiName, options: ParamOption<Params> & UseApiOption<FetchError<ErrorData>>]
 
 async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
   const [apiName, options] = args
@@ -143,94 +144,50 @@ async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
     return apiUrl
   })
 
-  // generate custom key because query and pathParams is reactive, the key should dynamically change depending on them.
-  const key = computed(() => {
-    return hash([config.public.apiBaseUrl, url.value, query.value, payload.value, API_SCHEMA[apiName].method, options?.headers], {
-      /**
-       * If browser is Safari, hashing with function will cause different hash value between server and client side, and cause
-       * missmatch error.
-       * Here using replacer to replace function with normal string to prevent inconsistent hash issue.
-       */
-      replacer(value) {
-        if (typeof value === 'function') {
-          return 'function'
-        }
-        return value
-      }
-    })
-  })
+  const fetchOption = computed(() => {
+    const opt: FetchOption = {
+      baseURL: config.public.apiBaseUrl,
+      method: API_SCHEMA[apiName].method,
+      responseType: 'json',
+      headers: {
+        'Accept': 'application/json',
+        // TODO: fill auth token or key here
+        'x-api-key': config.public.apiKey,
+        'Authorization': token.value ? `Bearer ${token.value}` : ''
+      },
 
-  // we need to manually stop watcher since the watcher code block is behind await,
-  // which means it is created asynchronously, it won't be bound to the owner component
-  // and must be stopped manually to avoid memory leaks.
-  // see https://vuejs.org/guide/essentials/watchers.html#stopping-a-watcher
-  onUnmounted(() => {
-    stopErrorHandlingEffect()
-  })
-
-  const useFetchOption: UseFetchOptions<ApiResponse[T]> = {
-    key: key.value,
-    baseURL: config.public.apiBaseUrl,
-    method: API_SCHEMA[apiName].method,
-    responseType: 'json',
-    headers: {
-      'Accept': 'application/json',
-      // TODO: fill auth token or key here
-      'x-api-key': config.public.apiKey,
-      'Authorization': token.value ? `Bearer ${token.value}` : ''
-    },
-
-    transform(input) {
-      const { success, data, error } = apiSchema.response.safeParse(input)
-
-      if (!success) {
-        throw createError({
-          ...error,
-          data: input,
-          message: `[useApi] Failed to parse "${apiName}" API response: ${error.message}`
-        })
-      }
-
-      return data as ApiResponse[T]
-    },
-
-    // Since we keep the reactivity for pathParams and query object, the key should also be reactive depending on bothe of them.
-    // For example, query object have page property, when the value of page has changed, useFetch will trigger another API call, the
-    // response data should be updated, but the key is still the same, therefor it may get the old data because of the same key.
-    // Here we implement our logic to get cache data, the key will be parsed dynamically depending on current pathParams and query.
-    getCachedData() {
-      // TODO: implement TTL(Time to Live) if necessary
-      // see https://www.youtube.com/watch?v=njsGVmcWviY
-      const keyValue = key.value
-      return nuxtApp.isHydrating ? nuxtApp.payload.data[keyValue] : nuxtApp.static.data[keyValue]
-    },
-
-    onRequestError(context) {
-      // TODO: onRequestError probably means network error, we can show no-network error toast here
-      console.error('[useApi] onRequestError', context.error)
-    },
-    ...options,
-    query
-  }
-
-  if (payload.value) {
-    useFetchOption.body = payload
-  }
-
-  const fetchResult = await useFetch(url, useFetchOption)
-
-  // default error handling effect
-  // NOTE:
-  // This watcher is created asynchronously because it was behind useFetch async call, that means
-  // we have to manually stop it when component unmount.
-  const stopErrorHandlingEffect = watch(fetchResult.error, async () => {
-    if (options?.skipError) {
-      return
+      onRequestError(context) {
+        // TODO: onRequestError probably means network error, we can show no-network error toast here
+        console.error('[useApi] onRequestError', context.error)
+      },
+      ...options,
+      query: query.value ?? undefined
+    }
+    if (payload.value) {
+      opt.body = payload.value
     }
 
-    const error = fetchResult.error.value
-    if (!error) {
-      return
+    return opt
+  })
+
+  try {
+    const result = await $fetch<ApiResponse[T]>(url.value, fetchOption.value)
+    const { success, data, error } = apiSchema.response.safeParse(result)
+
+    if (!success) {
+      throw createError({
+        ...error,
+        data: result,
+        message: `[useApi] Failed to parse "${apiName}" API response: ${error.message}`
+      })
+    }
+
+    return data as ApiResponse[T]
+  }
+  catch (e: unknown) {
+    const error = e as FetchError<ErrorData>
+    if (options?.skipError) {
+      throw error
     }
 
     let message = ''
@@ -276,6 +233,8 @@ async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
       message = error.message || errorResponse?.message || 'error.unknown'
     }
 
+    error.message = message
+
     if (options?.errorHandler) {
       options?.errorHandler({
         status: error.statusCode,
@@ -283,7 +242,7 @@ async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
         message
       })
 
-      return
+      throw error
     }
 
     if (navigateParams) {
@@ -291,7 +250,7 @@ async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
       // prevent infinite navigation loop
       if (isSamePath) {
         console.warn('[useApi] Infinite loop detected, cancel navigation. fullPath:', currentRoutePath)
-        return
+        throw error
       }
 
       if (import.meta.server) {
@@ -302,36 +261,11 @@ async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
         setMessage('error', message)
       }
 
-      /**
-       * NOTE:
-       * If you want to use "navigateTo" to navigate to another page, you need to use "callWithNuxt" to call the hook
-       * to prevent following error in server side：
-       *
-       * "A composable that requires access to the Nuxt instance was
-       * called outside of a plugin, Nuxt hook, Nuxt middleware, or Vue
-       * setup function."
-       *
-       * About the error：
-       * https://github.com/nuxt/nuxt/issues/14269#issuecomment-1397352832
-       * https://nuxt.com/docs/guide/concepts/auto-imports#vue-and-nuxt-composables
-       */
       await callWithNuxt(nuxtApp, navigateTo, navigateParams)
     }
 
-    // throw error inside async callback currently will not be caught in global error handler,
-    // so comment it until it works.
-    // if (import.meta.client) {
-    //   console.log('throw client error')
-    //   throw createError({ ...error, message })
-    // }
-
-    // if (import.meta.server && !hasNavigated) {
-    //   console.log('throw server error')
-    //   throw createError({ ...error, message })
-    // }
-  }, { immediate: true })
-
-  return fetchResult
+    throw error
+  }
 }
 
 export default useApi

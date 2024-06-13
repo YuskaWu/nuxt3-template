@@ -1,7 +1,0 @@
-{
-  "*.js": "eslint",
-  "*.ts": "eslint",
-  "*.vue": "eslint",
-  "*.css": "stylelint",
-  "*.scss": "stylelint"
-}

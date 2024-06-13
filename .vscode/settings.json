@@ -1,15 +1,59 @@
 {
   "editor.tabSize": 2,
   "editor.formatOnSave": true,
+  "editor.defaultFormatter": null,
   "editor.codeActionsOnSave": {
     "source.fixAll": "never",
-    "source.fixAll.eslint": "explicit",
-    "source.fixAll.stylelint": "explicit",
-    "source.organizeImports": "explicit"
+    "source.fixAll.eslint": "always",
+    "source.fixAll.stylelint": "always",
+    "source.organizeImports": "always"
   },
-  "stylelint.validate": ["css", "scss"],
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.format.enable": true,
+  "stylelint.validate": ["css", "less", "scss", "vue"],
+
+  "[javascript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
   "[vue]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[less]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "//comment1": "For fixing format issue: Smicolon suddenly appears and then disappears immediately when formatting the file with Prettier or Stylistic.",
+  "javascript.format.semicolons": "remove",
+  "typescript.format.semicolons": "remove",
+
+  "//comment2": "To prevent both VS Code's built-in linters and Stylelint from reporting the same errors",
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+
+  "//comment3": "exclude dist currently not work, don't known why",
+  "tailwindCSS.files.exclude": [
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/.hg/**",
+    "**/.svn/**",
+    "**/dist/**"
+  ]
 }
