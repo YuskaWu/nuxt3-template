@@ -6,7 +6,6 @@ import { API_SCHEMA, errorResponseParser } from './schema'
 import useServerMessage from '@/composables/userServerMessage'
 import useToken from '@/composables/useToken'
 import {
-  computed,
   createError,
   navigateTo,
   useNuxtApp,
@@ -47,7 +46,93 @@ type UseApiArguments<ApiName extends ApiNames, Params = ApiParams<ApiName>> =
 // Record<string, never> means empty.
 Record<string, never> extends Params
   ? [apiName: ApiName, options?: UseApiOption<FetchError<ErrorData>>]
-  : [apiName: ApiName, options: ParamOption<Params> & UseApiOption<FetchError<ErrorData>>]
+  : [apiName: ApiName, options: UseApiOption<FetchError<ErrorData>> & ParamOption<Params>]
+
+function parsePayload<T extends ApiNames>(apiName: T, options?: FetchOption) {
+  const apiSchema = API_SCHEMA[apiName]
+
+  const rawObj = options && 'payload' in options
+    ? deepToValue(options.payload)
+    : undefined
+
+  if ('payload' in apiSchema === false) {
+    return rawObj
+  }
+
+  const { success, data, error } = apiSchema.payload.safeParse(rawObj)
+  if (!success) {
+    throw createError({
+      ...error,
+      data: rawObj,
+      message: `[useApi] Failed to call "${apiName}" API: parsing payload object error.`
+    })
+  }
+
+  return data
+}
+
+function parsePathParams<T extends ApiNames>(apiName: T, options?: FetchOption) {
+  const apiSchema = API_SCHEMA[apiName]
+
+  const rawObj = options && 'pathParams' in options
+    ? deepToValue(options.pathParams)
+    : undefined
+
+  if ('pathParams' in apiSchema === false) {
+    return rawObj
+  }
+
+  const { success, data, error } = apiSchema.pathParams.safeParse(rawObj)
+  if (!success) {
+    throw createError({
+      ...error,
+      data: rawObj,
+      message: `[useApi] Failed to call "${apiName}" API: parsing pathParams object error.`
+    })
+  }
+
+  return data
+}
+
+function parseQuery<T extends ApiNames>(apiName: T, options?: FetchOption) {
+  const apiSchema = API_SCHEMA[apiName]
+
+  const rawObj = options && 'query' in options
+    ? deepToValue(options.query)
+    : undefined
+
+  if ('query' in apiSchema === false) {
+    return rawObj
+  }
+
+  const { success, data, error } = apiSchema.query.safeParse(rawObj)
+  if (!success) {
+    throw createError({
+      ...error,
+      data: rawObj,
+      message: `[useApi] Failed to call "${apiName}" API: parsing query object error.`
+    })
+  }
+
+  return data
+}
+
+function parseUrl(apiUrl: string, pathParams: unknown) {
+  if (!pathParams) {
+    return apiUrl
+  }
+
+  try {
+    return compile(apiUrl)(pathParams)
+  }
+  catch (e: unknown) {
+    const msg = `[useApi] Failed to compile dynamic URL: "${apiUrl}"`
+    console.error(msg, 'pathParams', pathParams)
+    throw createError(new Error(msg, { cause: e }))
+  }
+
+  return apiUrl
+}
 
 async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
   const [apiName, options] = args
@@ -61,117 +146,36 @@ async function useApi<T extends ApiNames>(...args: UseApiArguments<T>) {
   // The consuming message logic should inside plugins/init.client.ts
   const { setMessage } = useServerMessage()
 
-  const payload = computed(() => {
-    const rawObj = options && 'payload' in options
-      ? deepToValue(options.payload)
-      : undefined
+  const payload = parsePayload(apiName, options)
+  const pathParams = parsePathParams(apiName, options)
+  const query = parseQuery(apiName, options)
 
-    if ('payload' in apiSchema === false) {
-      return rawObj
-    }
+  const url = parseUrl(apiSchema.url, pathParams)
 
-    const { success, data, error } = apiSchema.payload.safeParse(rawObj)
-    if (!success) {
-      throw createError({
-        ...error,
-        data: rawObj,
-        message: `[useApi] Failed to call "${apiName}" API: parsing payload object error.`
-      })
-    }
+  const fetchOption: FetchOption = {
+    baseURL: config.public.apiBaseUrl,
+    method: API_SCHEMA[apiName].method,
+    responseType: 'json',
+    headers: {
+      'Accept': 'application/json',
+      // TODO: fill auth token or key here
+      'x-api-key': config.public.apiKey,
+      'Authorization': token.value ? `Bearer ${token.value}` : ''
+    },
 
-    return data
-  })
-
-  const pathParams = computed(() => {
-    const rawObj = options && 'pathParams' in options
-      ? deepToValue(options.pathParams)
-      : undefined
-
-    if ('pathParams' in apiSchema === false) {
-      return rawObj
-    }
-
-    const { success, data, error } = apiSchema.pathParams.safeParse(rawObj)
-    if (!success) {
-      throw createError({
-        ...error,
-        data: rawObj,
-        message: `[useApi] Failed to call "${apiName}" API: parsing pathParams object error.`
-      })
-    }
-
-    return data
-  })
-
-  const query = computed(() => {
-    const rawObj = options && 'query' in options
-      ? deepToValue(options.query)
-      : undefined
-
-    if ('query' in apiSchema === false) {
-      return rawObj
-    }
-
-    const { success, data, error } = apiSchema.query.safeParse(rawObj)
-    if (!success) {
-      throw createError({
-        ...error,
-        data: rawObj,
-        message: `[useApi] Failed to call "${apiName}" API: parsing query object error.`
-      })
-    }
-
-    return data
-  })
-
-  // According to pathParams object to compile the dynamic API URI
-  const url = computed(() => {
-    const apiUrl = apiSchema.url
-
-    if (!pathParams.value) {
-      return apiUrl
-    }
-
-    try {
-      return compile(apiUrl)(pathParams.value)
-    }
-    catch (e: unknown) {
-      const msg = `[useApi] Failed to compile dynamic URL: "${apiUrl}"`
-      console.error(msg, 'pathParams', pathParams.value)
-      throw createError(new Error(msg, { cause: e }))
-    }
-
-    return apiUrl
-  })
-
-  const fetchOption = computed(() => {
-    const opt: FetchOption = {
-      baseURL: config.public.apiBaseUrl,
-      method: API_SCHEMA[apiName].method,
-      responseType: 'json',
-      headers: {
-        'Accept': 'application/json',
-        // TODO: fill auth token or key here
-        'x-api-key': config.public.apiKey,
-        'Authorization': token.value ? `Bearer ${token.value}` : ''
-      },
-
-      onRequestError(context) {
-        // TODO: onRequestError probably means network error, we can show no-network error toast here
-        console.error('[useApi] onRequestError', context.error)
-      },
-      ...options,
-      query: query.value ?? undefined
-    }
-    if (payload.value) {
-      opt.body = payload.value
-    }
-
-    return opt
-  })
+    onRequestError(context) {
+      // TODO: onRequestError probably means network error, we can show no-network error toast here
+      console.error('[useApi] onRequestError', context.error)
+    },
+    ...options,
+    query
+  }
+  if (payload) {
+    fetchOption.body = payload
+  }
 
   try {
-    const result = await $fetch<ApiResponse[T]>(url.value, fetchOption.value)
+    const result = await $fetch<ApiResponse[T]>(url, fetchOption)
     const { success, data, error } = apiSchema.response.safeParse(result)
 
     if (!success) {
